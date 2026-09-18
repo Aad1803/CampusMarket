@@ -1,5 +1,8 @@
+import 'package:campusmarket/constant/const.dart';
 import 'package:campusmarket/navbar_screen/nav_bar_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'uni_seach_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -37,6 +40,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     confirmPasswordController.dispose();
     super.dispose();
   }
+
+  final TextEditingController universityController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +151,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
 
               const SizedBox(height: 18),
-
+              UniversitySearchField(
+                controller: universityController,
+              ),
+              const SizedBox(height: 18),
               // Email Label
               const Text(
                 'Email',
@@ -329,13 +337,94 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 height: 54,
                 child: ElevatedButton(
                   onPressed: () async {
-                    Navigator.pop(context);
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NavbarScreen(),
-                      ),
-                    );
+                    final name = nameController.text.trim();
+                    final email = emailController.text.trim().toLowerCase();
+                    final passport = passwordController.text.trim();
+
+                    // Check empty fields
+                    if (name.isEmpty || email.isEmpty || passport.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please fill in all fields'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Basic email validation
+                    if (!email.contains('@')) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a valid email address'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    try {
+                      // Reference to users collection
+                      final usersRef =
+                          FirebaseFirestore.instance.collection('users');
+
+                      // Check whether email already exists
+                      final existingUser = await usersRef
+                          .where('email', isEqualTo: email)
+                          .limit(1)
+                          .get();
+
+                      // Email already exists
+                      if (existingUser.docs.isNotEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'An account with this email already exists'),
+                          ),
+                        );
+                        return;
+                      }
+                      final userDocument = usersRef.doc();
+                      final userId = userDocument.id;
+                      await usersRef.add({
+                        'university': universityController.text,
+                        'userId': userId,
+                        'name': name,
+                        'email': email,
+                        'passport': passport,
+                        'createdAt': FieldValue.serverTimestamp().toString(),
+                      });
+                      user = {
+                        'university': universityController.text,
+                        'userId': userId,
+                        'name': name,
+                        'email': email,
+                        'passport': passport,
+                        'createdAt': FieldValue.serverTimestamp().toString(),
+                      };
+                      await saveUser(user);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Account created successfully!'),
+                        ),
+                      );
+                      nameController.clear();
+                      emailController.clear();
+                      passwordController.clear();
+                      // Navigator.pop(context);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NavbarScreen(),
+                        ),
+                      );
+                      // Navigate to next screen
+                      // Get.to(() => const HomeScreen());
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Something went wrong: $e'),
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,

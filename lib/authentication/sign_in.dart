@@ -1,29 +1,20 @@
 import 'package:campusmarket/authentication/sign_up_screen.dart';
+import 'package:campusmarket/constant/const.dart';
 import 'package:campusmarket/navbar_screen/nav_bar_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  SignInScreen({super.key});
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  // Colors
-  static const Color themeColor = Color(0xFF2563EB);
-  static const Color backgroundColor = Color(0xFFF8F9FB);
-  static const Color whiteColor = Colors.white;
-  static const Color primaryTextColor = Color(0xFF111827);
-  static const Color secondaryTextColor = Color(0xFF6B7280);
-  static const Color labelColor = Color(0xFF374151);
-  static const Color borderColor = Color(0xFFE5E7EB);
-
-  // Controllers
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  // State
   bool isPasswordVisible = false;
 
   @override
@@ -39,33 +30,24 @@ class _SignInScreenState extends State<SignInScreen> {
       backgroundColor: backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 55),
-
-              // Logo
+              SizedBox(height: 55),
               Center(
                 child: Container(
-                  height: 70,
-                  width: 70,
+                  // height: double.in,
+                  // width: doubl,
                   decoration: BoxDecoration(
-                    color: themeColor,
+                    // color: themeColor,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(
-                    Icons.storefront_rounded,
-                    color: whiteColor,
-                    size: 38,
-                  ),
+                  child: Image.asset("assets/logo.png"),
                 ),
               ),
-
-              const SizedBox(height: 30),
-
-              // Title
-              const Center(
+              SizedBox(height: 30),
+              Center(
                 child: Text(
                   'Welcome Back!',
                   style: TextStyle(
@@ -75,11 +57,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              // Subtitle
-              const Center(
+              SizedBox(height: 8),
+              Center(
                 child: Text(
                   'Sign in to continue to CampusMarketplace',
                   textAlign: TextAlign.center,
@@ -89,11 +68,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 40),
-
-              // Email Label
-              const Text(
+              SizedBox(height: 40),
+              Text(
                 'Email',
                 style: TextStyle(
                   fontSize: 14,
@@ -101,19 +77,16 @@ class _SignInScreenState extends State<SignInScreen> {
                   color: labelColor,
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              // Email Field
+              SizedBox(height: 8),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: 'Enter your email',
-                  hintStyle: const TextStyle(
+                  hintStyle: TextStyle(
                     color: secondaryTextColor,
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.email_outlined,
                     color: secondaryTextColor,
                   ),
@@ -121,29 +94,26 @@ class _SignInScreenState extends State<SignInScreen> {
                   fillColor: whiteColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: borderColor,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: borderColor,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: themeColor,
                     ),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Password Label
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Password',
                 style: TextStyle(
                   fontSize: 14,
@@ -151,19 +121,16 @@ class _SignInScreenState extends State<SignInScreen> {
                   color: labelColor,
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              // Password Field
+              SizedBox(height: 8),
               TextField(
                 controller: passwordController,
                 obscureText: !isPasswordVisible,
                 decoration: InputDecoration(
                   hintText: 'Enter your password',
-                  hintStyle: const TextStyle(
+                  hintStyle: TextStyle(
                     color: secondaryTextColor,
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.lock_outline,
                     color: secondaryTextColor,
                   ),
@@ -184,33 +151,30 @@ class _SignInScreenState extends State<SignInScreen> {
                   fillColor: whiteColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: borderColor,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: borderColor,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                       color: themeColor,
                     ),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 10),
-
-              // Forgot Password
+              SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'Forgot Password?',
                     style: TextStyle(
                       color: themeColor,
@@ -219,21 +183,78 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 15),
-
-              // Sign In Button
+              SizedBox(height: 15),
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NavbarScreen(),
-                      ),
-                    );
+                  onPressed: () async {
+                    final email = emailController.text.trim().toLowerCase();
+                    final passport = passwordController.text.trim();
+
+                    if (email.isEmpty || passport.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Please enter email and passport number'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final usersRef =
+                          FirebaseFirestore.instance.collection('users');
+
+                      final querySnapshot = await usersRef
+                          .where('email', isEqualTo: email)
+                          .limit(1)
+                          .get();
+
+                      if (querySnapshot.docs.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('No account found with this email'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      final userDoc = querySnapshot.docs.first;
+                      final userData = userDoc.data();
+
+                      user = userData;
+
+                      if (userData['passport'] != passport) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Incorrect passport number'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      await saveUser(userData);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Login successful!'),
+                        ),
+                      );
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NavbarScreen(),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Login failed: $e'),
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
@@ -243,7 +264,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Sign In',
                     style: TextStyle(
                       fontSize: 16,
@@ -252,14 +273,11 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 30),
-
-              // Sign Up
+              SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Don't have an account? ",
                     style: TextStyle(
                       color: secondaryTextColor,
@@ -270,14 +288,14 @@ class _SignInScreenState extends State<SignInScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
+                          builder: (context) => SignUpScreen(),
                         ),
                       );
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Sign Up',
                       style: TextStyle(
                         color: themeColor,
@@ -287,8 +305,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
             ],
           ),
         ),

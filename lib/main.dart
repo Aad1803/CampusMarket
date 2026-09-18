@@ -1,8 +1,22 @@
 import 'package:campusmarket/authentication/sign_in.dart';
+import 'package:campusmarket/authentication/sign_up_screen.dart';
+import 'package:campusmarket/constant/const.dart';
 import 'package:campusmarket/navbar_screen/nav_bar_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await loadUser();
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -12,11 +26,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: _title,
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // useMaterial3: false,
         primarySwatch: Colors.blue,
       ),
-      home: const NavbarScreen(),
+      home: isLoggedIn ? NavbarScreen() : SignInScreen(),
+      // home: SignUpScreen(),
     );
   }
 }

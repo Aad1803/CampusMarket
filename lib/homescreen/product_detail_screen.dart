@@ -1,5 +1,8 @@
 import 'package:campusmarket/constant/const.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -28,16 +31,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int selectedImage = 0;
   bool isFavorite = false;
 
-  final List<String> productImages = [
-    'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=1200&q=80',
-  ];
+  var productImages = [];
 
   @override
   void dispose() {
     pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    productImages = widget.product['images'];
+    print(widget.product['images']);
+    setState(() {});
   }
 
   @override
@@ -105,20 +113,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       });
                     },
                     itemBuilder: (context, index) {
-                      return Image.network(
-                        productImages[index],
-                        width: double.infinity,
+                      String cleanBase64 = productImages[index];
+
+                      if (cleanBase64.contains(',')) {
+                        cleanBase64 = cleanBase64.split(',').last;
+                      }
+
+                      // Remove spaces/new lines
+                      cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+
+                      Uint8List bytes = base64Decode(cleanBase64);
+
+                      if (bytes.isEmpty) {
+                        return const Center(
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 50,
+                          ),
+                        );
+                      }
+
+                      return Image.memory(
+                        bytes,
                         fit: BoxFit.cover,
+                        width: double.infinity,
                         errorBuilder: (context, error, stackTrace) {
+                          print('IMAGE ERROR: $error');
+
                           return const Center(
                             child: Icon(
                               Icons.image_not_supported_outlined,
                               size: 50,
-                              color: lightTextColor,
                             ),
                           );
                         },
                       );
+                      // return Image.network(
+                      //   productImages[index],
+                      //   width: double.infinity,
+                      //   fit: BoxFit.cover,
+                      //   errorBuilder: (context, error, stackTrace) {
+                      //     return const Center(
+                      //       child: Icon(
+                      //         Icons.image_not_supported_outlined,
+                      //         size: 50,
+                      //         color: lightTextColor,
+                      //       ),
+                      //     );
+                      //   },
+                      // );
                     },
                   ),
 
@@ -189,13 +232,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Row(
                     children: [
                       _InfoBadge(
-                        text: product['category'] ?? 'Electronics',
+                        text: product['category'] ?? 'Other',
                         backgroundColor: const Color(0xFFEFF6FF),
                         textColor: themeColor,
                       ),
                       const SizedBox(width: 8),
                       _InfoBadge(
-                        text: product['condition'] ?? 'Like New',
+                        text: product['condition'] ?? 'New',
                         backgroundColor: const Color(0xFFF0FDF4),
                         textColor: successColor,
                       ),
@@ -206,7 +249,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Product name
                   Text(
-                    product['name'] ?? 'MacBook Air M2',
+                    product['name'] ?? '--',
                     style: const TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.w700,
@@ -219,7 +262,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Price
                   Text(
-                    product['price'] ?? '\$750',
+                    product['price'].toString() ?? '\$0.0',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -238,8 +281,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         color: secondaryTextColor,
                       ),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Cleveland State University',
+                      Text(
+                        (user['university'] ?? "").toString(),
                         style: TextStyle(
                           fontSize: 13,
                           color: secondaryTextColor,
@@ -272,11 +315,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    product['description'] ??
-                        'This product is in excellent condition and works perfectly. '
-                            'It has been well maintained and is ready for its new owner. '
-                            'Feel free to message the seller if you have any questions '
-                            'or would like to make an offer.',
+                    product['description'] ?? '--',
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.7,
@@ -317,12 +356,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   _DetailRow(
                     title: 'Availability',
-                    value: 'Available',
+                    value: product['status'],
                     valueColor: successColor,
                   ),
                   _DetailRow(
                     title: 'Listed',
-                    value: '2 days ago',
+                    value: (product['createdAt'] as Timestamp)
+                        .toDate()
+                        .toString()
+                        .split(" ")
+                        .first,
                   ),
                 ],
               ),
@@ -333,105 +376,109 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             // ------------------------------------------------
             // SELLER
             // ------------------------------------------------
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: whiteColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Seller',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      color: primaryTextColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      // Seller image
-                      Container(
-                        height: 54,
-                        width: 54,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFEFF6FF),
+            product['user'] == null || product['user'] == ""
+                ? Container(
+                    height: 0,
+                  )
+                : Container(
+                    padding: const EdgeInsets.all(20),
+                    color: whiteColor,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Seller',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                            color: primaryTextColor,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          size: 30,
-                          color: themeColor,
-                        ),
-                      ),
-
-                      const SizedBox(width: 13),
-
-                      // Seller information
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 16),
+                        Row(
                           children: [
-                            Text(
-                              product['seller'] ?? 'Alex Johnson',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                            // Seller image
+                            Container(
+                              height: 54,
+                              width: 54,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFEFF6FF),
+                              ),
+                              child: const Icon(
+                                Icons.person_rounded,
+                                size: 30,
+                                color: themeColor,
+                              ),
+                            ),
+
+                            const SizedBox(width: 13),
+
+                            // Seller information
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product['user']['name'] ?? 'Tester',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    product['user']['university'] ?? 'Tester',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: secondaryTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        size: 14,
+                                        color: themeColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        'Campus member',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: themeColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Seller profile button
+                            Container(
+                              height: 40,
+                              width: 40,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: borderColor,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 15,
                                 color: primaryTextColor,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Cleveland State University',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: secondaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.verified_rounded,
-                                  size: 14,
-                                  color: themeColor,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'Campus member',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: themeColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
                         ),
-                      ),
-
-                      // Seller profile button
-                      Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: borderColor,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 15,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: 110),
           ],

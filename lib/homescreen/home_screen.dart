@@ -1,5 +1,8 @@
+import 'package:campusmarket/constant/const.dart';
 import 'package:campusmarket/homescreen/product_detail_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,83 +25,60 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchController = TextEditingController();
 
   int selectedCategory = 0;
+  List<String> newCategories = categories;
 
-  final List<String> categories = [
-    'All',
-    'Electronics',
-    'Books',
-    'Furniture',
-    'Clothing',
-    'Vehicles',
-    'Other',
-  ];
+  List<Map<String, dynamic>> products = [];
 
-  final List<Map<String, dynamic>> products = [
-    {
-      'name': 'MacBook Air M2',
-      'price': '\$750',
-      'category': 'Electronics',
-      'condition': 'Like New',
-      'seller': 'Alex Johnson',
-      'image':
-          'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'Calculus Textbook',
-      'price': '\$35',
-      'category': 'Books',
-      'condition': 'Good',
-      'seller': 'Sarah Miller',
-      'image':
-          'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'Study Desk',
-      'price': '\$80',
-      'category': 'Furniture',
-      'condition': 'Good',
-      'seller': 'Michael Lee',
-      'image':
-          'https://images.unsplash.com/photo-1518455027359-f3f8164ba6b0?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'Winter Jacket',
-      'price': '\$45',
-      'category': 'Clothing',
-      'condition': 'Like New',
-      'seller': 'Emma Wilson',
-      'image':
-          'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'iPhone 15',
-      'price': '\$550',
-      'category': 'Electronics',
-      'condition': 'Good',
-      'seller': 'David Brown',
-      'image':
-          'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'name': 'Office Chair',
-      'price': '\$60',
-      'category': 'Furniture',
-      'condition': 'Good',
-      'seller': 'Chris Wilson',
-      'image':
-          'https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=800&q=80',
-    },
-  ];
   List<Map<String, dynamic>> get filteredProducts {
     if (selectedCategory == 0) {
       return products;
     }
 
-    final category = categories[selectedCategory];
+    final category = newCategories[selectedCategory];
 
     return products
-        .where((product) => product['category'] == category)
+        .where((product) =>
+            category == "All" ? true : product['category'] == category)
         .toList();
+  }
+
+  bool isLoading = true;
+// List<Map<String, dynamic>> products = [];
+
+  @override
+  void initState() {
+    super.initState();
+    newCategories.insert(0, "All");
+
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    try {
+      final String currentUserId = user['userId'];
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .where(
+            'userId',
+            isNotEqualTo: currentUserId,
+          )
+          .get();
+
+      setState(() {
+        products = snapshot.docs.map((doc) {
+          return doc.data();
+        }).toList();
+
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error: $e');
+
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -111,6 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          logoutUser();
+        },
+      ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -165,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: categories.length,
+                  itemCount: newCategories.length,
                   itemBuilder: (context, index) {
                     return _buildCategoryChip(index);
                   },
@@ -365,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Center(
           child: Text(
-            categories[index],
+            newCategories[index],
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -481,19 +466,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: double.infinity,
-                    child: Image.network(
-                      product['image'],
+                    child: Image.memory(
+                      base64Decode(product['images'][0]),
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 40,
-                            color: lightTextColor,
-                          ),
-                        );
-                      },
                     ),
+                    // child: Image.network(
+                    //   product['image'],
+                    //   fit: BoxFit.cover,
+                    //   errorBuilder: (context, error, stackTrace) {
+                    //     return const Center(
+                    //       child: Icon(
+                    //         Icons.image_not_supported_outlined,
+                    //         size: 40,
+                    //         color: lightTextColor,
+                    //       ),
+                    //     );
+                    //   },
+                    // ),
                   ),
 
                   // Favorite
@@ -537,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      product['price'],
+                      product['price'].toString(),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -549,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            product['condition'],
+                            product['condition'].toString(),
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 11,
@@ -597,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            product['seller'],
+                            product['sellerName'],
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

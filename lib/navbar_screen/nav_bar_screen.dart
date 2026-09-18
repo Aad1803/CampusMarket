@@ -1,4 +1,5 @@
 import 'package:campusmarket/homescreen/home_screen.dart';
+import 'package:campusmarket/sellscreen/sell_screen.dart';
 import 'package:flutter/material.dart';
 
 class NavbarScreen extends StatefulWidget {
@@ -41,14 +42,16 @@ class _NavbarScreenState extends State<NavbarScreen> {
       body: Center(
         child: selectedIndex == 0
             ? HomeScreen()
-            : Text(
-                titles[selectedIndex],
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: primaryTextColor,
-                ),
-              ),
+            : selectedIndex == 1
+                ? SellScreen()
+                : Text(
+                    titles[selectedIndex],
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: primaryTextColor,
+                    ),
+                  ),
       ),
 
       // Bottom Navigation Bar
