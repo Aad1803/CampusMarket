@@ -107,20 +107,29 @@ class _SellScreenState extends State<SellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F8),
-      floatingActionButton: FloatingActionButton(onPressed: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CreateProductScreen(
-              userId: user['userId'],
-              sellerName: user['name'],
-              sellerUniversity: user['university'],
+      backgroundColor: Color(0xFFF7F7F8),
+      floatingActionButton: FloatingActionButton(
+        shape: const CircleBorder(),
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CreateProductScreen(
+                userId: user['userId'],
+                sellerName: user['name'],
+                sellerUniversity: user['university'],
+                isFromEdit: false,
+              ),
             ),
-          ),
-        );
-        fetchMyProducts();
-      }),
+          );
+          fetchMyProducts();
+        },
+        backgroundColor: themeColor,
+        child: Icon(
+          Icons.add,
+          color: whiteColor,
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -260,80 +269,95 @@ class _SellScreenState extends State<SellScreen> {
 
           // Product Details
           Expanded(
-            flex: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '\$${price}',
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+              flex: 4,
+              child: Container(
+                color: lightThemeColor,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildTag(category),
-                      if (condition.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        buildTag(condition),
-                      ],
-                    ],
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 5,
+                      Text(
+                        name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        decoration: BoxDecoration(
-                          color: status == 'available'
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '\$${price}',
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Text(
-                          status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: status == 'available'
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          buildTag(category),
+                          if (condition.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            buildTag(condition),
+                          ],
+                        ],
                       ),
                       const Spacer(),
-                      IconButton(
-                        onPressed: () {
-                          // Edit / Delete menu later
-                        },
-                        icon: const Icon(
-                          Icons.more_horiz,
-                          color: Colors.grey,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: status == 'available'
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              status.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: status == 'available'
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateProductScreen(
+                                    userId: user['userId'],
+                                    sellerName: user['name'],
+                                    sellerUniversity: user['university'],
+                                    isFromEdit: true,
+                                    product: product,
+                                  ),
+                                ),
+                              );
+                              fetchMyProducts();
+                              // Edit / Delete menu later
+                            },
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
+              )),
         ],
       ),
     );

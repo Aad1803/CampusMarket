@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const Color themeColor = Color(0xFF2F69EC);
+const Color lightThemeColor = Color(0xFFF1F5FF);
 const Color backgroundColor = Color(0xFFF7F8FA);
 const Color whiteColor = Colors.white;
 const Color primaryTextColor = Color(0xFF111827);
@@ -13,7 +14,7 @@ const Color cardColor = Colors.white;
 
 const Color labelColor = Color(0xFF374151);
 
-Map<dynamic, dynamic> user = {};
+Map<String, dynamic> user = {};
 
 bool isLoggedIn = false;
 

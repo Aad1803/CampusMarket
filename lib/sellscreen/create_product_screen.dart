@@ -12,13 +12,16 @@ class CreateProductScreen extends StatefulWidget {
   final String userId;
   final String sellerName;
   final String sellerUniversity;
+  final bool isFromEdit;
+  Map<String, dynamic>? product;
 
-  const CreateProductScreen({
-    super.key,
-    required this.userId,
-    required this.sellerName,
-    required this.sellerUniversity,
-  });
+  CreateProductScreen(
+      {super.key,
+      required this.userId,
+      required this.sellerName,
+      required this.sellerUniversity,
+      this.product,
+      required this.isFromEdit});
 
   @override
   State<CreateProductScreen> createState() => _CreateProductScreenState();
@@ -51,6 +54,42 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
     priceController.dispose();
     descriptionController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    loadData();
+  }
+
+  loadData() async {
+    try {
+      if (widget.isFromEdit == true) {
+        nameController.text = widget.product?['name'] ?? "";
+        priceController.text = widget.product?['price'] ?? "";
+        descriptionController.text = widget.product?['description'] ?? "";
+        for (int i = 0; i < (widget.product?['images'] ?? []).length; i++) {
+          String cleanBase64 = widget.product?['images'][i];
+
+          if (cleanBase64.contains(',')) {
+            cleanBase64 = cleanBase64.split(',').last;
+          }
+
+          // Remove spaces/new lines
+          cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+
+          Uint8List bytes = base64Decode(cleanBase64);
+
+          selectedImages.add(XFile.fromData(bytes));
+        }
+        selectedCategory = widget.product?['category'];
+        selectedCondition = widget.product?['condition'];
+        setState(() {});
+      }
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   // ============================================================
@@ -190,6 +229,122 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
       });
 
       showMessage('Product listed successfully!');
+
+      // Go back
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isUploading = false;
+      });
+
+      showMessage('Failed to add product: $e');
+    }
+  }
+
+  Future<void> updateProduct() async {
+    final name = nameController.text.trim();
+    final priceText = priceController.text.trim();
+    final description = descriptionController.text.trim();
+
+    // Validation
+    if (selectedImages.isEmpty) {
+      showMessage('Please add at least one product picture');
+      return;
+    }
+
+    if (name.isEmpty) {
+      showMessage('Please enter product name');
+      return;
+    }
+
+    if (priceText.isEmpty) {
+      showMessage('Please enter product price');
+      return;
+    }
+
+    final price = double.tryParse(priceText);
+
+    if (price == null || price <= 0) {
+      showMessage('Please enter a valid price');
+      return;
+    }
+
+    if (description.isEmpty) {
+      showMessage('Please enter product description');
+      return;
+    }
+
+    if (selectedCategory == null) {
+      showMessage('Please select a category');
+      return;
+    }
+
+    if (selectedCondition == null) {
+      showMessage('Please select product condition');
+      return;
+    }
+
+    setState(() {
+      isUploading = true;
+    });
+
+    try {
+      // ----------------------------------------------------------
+      // CREATE PRODUCT DOCUMENT
+      // ----------------------------------------------------------
+      final usersRef = FirebaseFirestore.instance.collection('products');
+
+      final querySnapshot = await usersRef
+          .where('productId', isEqualTo: widget.product?['productId'])
+          .limit(1)
+          .get();
+      // final productRef =
+      //     FirebaseFirestore.instance.collection('products').doc().;
+
+      // final productId = productRef.id;
+
+      // ----------------------------------------------------------
+      // UPLOAD IMAGES
+      // ----------------------------------------------------------
+
+      List<String> imageData = [];
+
+      for (final image in selectedImages) {
+        final Uint8List bytes = await image.readAsBytes();
+
+        final String base64Image = base64Encode(bytes);
+
+        imageData.add(base64Image);
+      }
+      // ----------------------------------------------------------
+      // SAVE PRODUCT TO FIRESTORE
+      // ----------------------------------------------------------
+
+      await querySnapshot.docs.first.reference.update({
+        'productId': widget.product?['productId'],
+        'name': name,
+        'price': price,
+        'description': description,
+        'category': selectedCategory,
+        'condition': selectedCondition,
+        'images': imageData,
+        'sellerName': widget.sellerName,
+        'sellerUniversity': widget.sellerUniversity,
+        'userId': widget.userId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'available',
+        'user': user
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        isUploading = false;
+      });
+
+      showMessage('Product updated successfully!');
 
       // Go back
       Navigator.pop(context);
@@ -598,7 +753,11 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: isUploading ? null : createProduct,
+                  onPressed: isUploading
+                      ? null
+                      : (widget.isFromEdit ?? false)
+                          ? updateProduct
+                          : createProduct,
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -625,8 +784,10 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                             ),
                           ],
                         )
-                      : const Text(
-                          'Publish Product',
+                      : Text(
+                          widget.isFromEdit
+                              ? "Update Product"
+                              : 'Publish Product',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

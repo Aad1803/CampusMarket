@@ -128,7 +128,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     color: secondaryTextColor,
                   ),
                   filled: true,
-                  fillColor: whiteColor,
+                  fillColor: lightThemeColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(
@@ -181,7 +181,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     color: secondaryTextColor,
                   ),
                   filled: true,
-                  fillColor: whiteColor,
+                  fillColor: lightThemeColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(
@@ -244,7 +244,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   filled: true,
-                  fillColor: whiteColor,
+                  fillColor: lightThemeColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(
@@ -307,7 +307,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   filled: true,
-                  fillColor: whiteColor,
+                  fillColor: lightThemeColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(

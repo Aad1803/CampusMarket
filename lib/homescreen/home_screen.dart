@@ -227,18 +227,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Container(
-          height: 46,
-          width: 46,
-          decoration: BoxDecoration(
-            color: themeColor,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: whiteColor,
-            size: 25,
-          ),
-        ),
+            height: 46,
+            width: 46,
+            decoration: BoxDecoration(
+              color: whiteColor,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Image.asset('assets/logo.png')),
         const SizedBox(width: 12),
         const Expanded(
           child: Column(
@@ -291,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       height: 54,
       decoration: BoxDecoration(
-        color: whiteColor,
+        color: lightThemeColor,
         borderRadius: BorderRadius.circular(17),
         border: Border.all(
           color: borderColor,
@@ -300,6 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: TextField(
         controller: searchController,
         decoration: const InputDecoration(
+          fillColor: lightThemeColor,
           hintText: 'Search products...',
           hintStyle: TextStyle(
             color: lightTextColor,
@@ -342,10 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(right: 9),
         padding: const EdgeInsets.symmetric(horizontal: 17),
         decoration: BoxDecoration(
-          color: isSelected ? themeColor : whiteColor,
+          color: isSelected ? themeColor : lightThemeColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? themeColor : borderColor,
+            color: isSelected ? themeColor : lightThemeColor,
           ),
         ),
         child: Center(
@@ -400,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         height: 40,
         decoration: BoxDecoration(
-          color: whiteColor,
+          color: lightThemeColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: borderColor,
@@ -448,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: cardColor,
+          color: lightThemeColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: borderColor,
@@ -458,16 +454,18 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product image placeholder
             Expanded(
               flex: 5,
               child: Stack(
                 children: [
-                  SizedBox(
+                  Container(
+                    color: lightThemeColor,
                     width: double.infinity,
                     height: double.infinity,
                     child: Image.memory(
                       base64Decode(product['images'][0]),
+
+                      // color: lightThemeColor,
                       fit: BoxFit.cover,
                     ),
                     // child: Image.network(

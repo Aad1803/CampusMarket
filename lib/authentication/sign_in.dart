@@ -37,7 +37,7 @@ class _SignInScreenState extends State<SignInScreen> {
               SizedBox(height: 55),
               Center(
                 child: Container(
-                  // height: double.in,
+                  height: MediaQuery.of(context).size.width / 2,
                   // width: doubl,
                   decoration: BoxDecoration(
                     // color: themeColor,
@@ -78,39 +78,44 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
               SizedBox(height: 8),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  hintStyle: TextStyle(
-                    color: secondaryTextColor,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.email_outlined,
-                    color: secondaryTextColor,
-                  ),
-                  filled: true,
-                  fillColor: whiteColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: borderColor,
+              Container(
+                child: TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your email',
+                    hintStyle: TextStyle(
+                      color: secondaryTextColor,
                     ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: borderColor,
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: secondaryTextColor,
                     ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: themeColor,
+                    filled: true,
+                    fillColor: lightThemeColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: borderColor,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: themeColor,
+                      ),
                     ),
                   ),
                 ),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: lightThemeColor),
               ),
               SizedBox(height: 20),
               Text(
@@ -126,6 +131,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 controller: passwordController,
                 obscureText: !isPasswordVisible,
                 decoration: InputDecoration(
+                  fillColor: lightThemeColor,
                   hintText: 'Enter your password',
                   hintStyle: TextStyle(
                     color: secondaryTextColor,
@@ -148,7 +154,6 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                   filled: true,
-                  fillColor: whiteColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(

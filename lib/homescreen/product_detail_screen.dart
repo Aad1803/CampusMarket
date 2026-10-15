@@ -1,4 +1,5 @@
 import 'package:campusmarket/constant/const.dart';
+import 'package:campusmarket/messages/chat_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,7 @@ import 'dart:convert';
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> product;
 
-  const ProductDetailScreen({
+  ProductDetailScreen({
     super.key,
     required this.product,
   });
@@ -39,12 +40,79 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _openChat() async {
+    setState(() => _loading = true);
+
+    try {
+      final db = FirebaseFirestore.instance;
+
+      // Me and the seller from the JSON
+      final me = user['userId'].toString();
+      final seller = (widget.product['user'] is Map
+              ? widget.product['user']['userId']
+              : widget.product['userId'])
+          .toString();
+      final productId = widget.product['productId'].toString();
+
+      // Deterministic id: same two users + same product = same chat
+      final pair = <String>[me, seller]..sort();
+      final chatId = '${productId}_${pair[0]}_${pair[1]}';
+
+      final ref = db.collection('chats').doc(chatId);
+      final snap = await ref.get();
+
+      // Create it only if it's new
+      if (!snap.exists) {
+        final images = (widget.product['images'] as List?) ?? const [];
+        final firstImage = images.isNotEmpty ? images.first.toString() : '';
+
+        await ref.set({
+          'chatId': chatId,
+          'participants': [me, seller],
+          'productId': productId,
+          'productTitle': widget.product['name'].toString(),
+          'productImage': firstImage,
+          'buyerId': me,
+          'sellerId': seller,
+          'buyerTag': 'buy',
+          'sellerTag': 'sell',
+          'lastMessage': '',
+          'lastMessageAt': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!mounted) return;
+
+      // Normal navigation — chatId always exists by now
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            chatId: chatId,
+            currentUser: user,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  var _loading = false;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     productImages = widget.product['images'];
     print(widget.product['images']);
+
     setState(() {});
   }
 
@@ -222,155 +290,171 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             // ------------------------------------------------
             // PRODUCT INFORMATION
             // ------------------------------------------------
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
-              color: whiteColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category + Condition
-                  Row(
-                    children: [
-                      _InfoBadge(
-                        text: product['category'] ?? 'Other',
-                        backgroundColor: const Color(0xFFEFF6FF),
-                        textColor: themeColor,
-                      ),
-                      const SizedBox(width: 8),
-                      _InfoBadge(
-                        text: product['condition'] ?? 'New',
-                        backgroundColor: const Color(0xFFF0FDF4),
-                        textColor: successColor,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Product name
-                  Text(
-                    product['name'] ?? '--',
-                    style: const TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.w700,
-                      color: primaryTextColor,
-                      height: 1.2,
+            Padding(
+              padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+                decoration: BoxDecoration(
+                  color: lightThemeColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category + Condition
+                    Row(
+                      children: [
+                        _InfoBadge(
+                          text: product['category'] ?? 'Other',
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          textColor: themeColor,
+                        ),
+                        const SizedBox(width: 8),
+                        _InfoBadge(
+                          text: product['condition'] ?? 'New',
+                          backgroundColor: const Color(0xFFF0FDF4),
+                          textColor: successColor,
+                        ),
+                      ],
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 14),
 
-                  // Price
-                  Text(
-                    product['price'].toString() ?? '\$0.0',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: themeColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Location / university
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: secondaryTextColor,
+                    // Product name
+                    Text(
+                      product['name'] ?? '--',
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.w700,
+                        color: primaryTextColor,
+                        height: 1.2,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        (user['university'] ?? "").toString(),
-                        style: TextStyle(
-                          fontSize: 13,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Price
+                    Text(
+                      product['price'].toString() ?? '\$0.0',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: themeColor,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Location / university
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
                           color: secondaryTextColor,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 6),
+                        Text(
+                          (user['university'] ?? "").toString(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-
             const SizedBox(height: 10),
 
             // ------------------------------------------------
             // DESCRIPTION
             // ------------------------------------------------
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: whiteColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Description',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      color: primaryTextColor,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: lightThemeColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: primaryTextColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    product['description'] ?? '--',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.7,
-                      color: secondaryTextColor,
+                    const SizedBox(height: 12),
+                    Text(
+                      product['description'] ?? '--',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.7,
+                        color: secondaryTextColor,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-
             const SizedBox(height: 10),
 
             // ------------------------------------------------
             // PRODUCT DETAILS
             // ------------------------------------------------
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: whiteColor,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Product Details',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w700,
-                      color: primaryTextColor,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: lightThemeColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Product Details',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: primaryTextColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  _DetailRow(
-                    title: 'Category',
-                    value: product['category'] ?? 'Electronics',
-                  ),
-                  _DetailRow(
-                    title: 'Condition',
-                    value: product['condition'] ?? 'Like New',
-                  ),
-                  _DetailRow(
-                    title: 'Availability',
-                    value: product['status'],
-                    valueColor: successColor,
-                  ),
-                  _DetailRow(
-                    title: 'Listed',
-                    value: (product['createdAt'] as Timestamp)
-                        .toDate()
-                        .toString()
-                        .split(" ")
-                        .first,
-                  ),
-                ],
+                    const SizedBox(height: 18),
+                    _DetailRow(
+                      title: 'Category',
+                      value: product['category'] ?? 'Electronics',
+                    ),
+                    _DetailRow(
+                      title: 'Condition',
+                      value: product['condition'] ?? 'Like New',
+                    ),
+                    _DetailRow(
+                      title: 'Availability',
+                      value: product['status'],
+                      valueColor: successColor,
+                    ),
+                    _DetailRow(
+                      title: 'Listed',
+                      value: (product['createdAt'] as Timestamp)
+                          .toDate()
+                          .toString()
+                          .split(" ")
+                          .first,
+                    ),
+                  ],
+                ),
               ),
             ),
-
             const SizedBox(height: 10),
 
             // ------------------------------------------------
@@ -380,106 +464,111 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ? Container(
                     height: 0,
                   )
-                : Container(
-                    padding: const EdgeInsets.all(20),
-                    color: whiteColor,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Seller',
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            color: primaryTextColor,
+                : Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: lightThemeColor,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Seller',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              color: primaryTextColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            // Seller image
-                            Container(
-                              height: 54,
-                              width: 54,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFFEFF6FF),
-                              ),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                size: 30,
-                                color: themeColor,
-                              ),
-                            ),
-
-                            const SizedBox(width: 13),
-
-                            // Seller information
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product['user']['name'] ?? 'Tester',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: primaryTextColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    product['user']['university'] ?? 'Tester',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: secondaryTextColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.verified_rounded,
-                                        size: 14,
-                                        color: themeColor,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Text(
-                                        'Campus member',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: themeColor,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Seller profile button
-                            Container(
-                              height: 40,
-                              width: 40,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: borderColor,
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              // Seller image
+                              Container(
+                                height: 54,
+                                width: 54,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFFEFF6FF),
                                 ),
-                                shape: BoxShape.circle,
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  size: 30,
+                                  color: themeColor,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 15,
-                                color: primaryTextColor,
+
+                              const SizedBox(width: 13),
+
+                              // Seller information
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product['user']['name'] ?? 'Tester',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: primaryTextColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      product['user']['university'] ?? 'Tester',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: secondaryTextColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.verified_rounded,
+                                          size: 14,
+                                          color: themeColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Text(
+                                          'Campus member',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: themeColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+
+                              // Seller profile button
+                              Container(
+                                height: 40,
+                                width: 40,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: borderColor,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 15,
+                                  color: primaryTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-
             const SizedBox(height: 110),
           ],
         ),
@@ -537,7 +626,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   height: 54,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // Open chat screen later
+                      _openChat(); // Open chat screen later
                     },
                     icon: const Icon(
                       Icons.chat_bubble_outline_rounded,
