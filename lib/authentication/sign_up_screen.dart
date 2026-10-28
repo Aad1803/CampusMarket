@@ -3,6 +3,7 @@ import 'package:campusmarket/navbar_screen/nav_bar_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'uni_seach_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -20,6 +21,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   static const Color secondaryTextColor = Color(0xFF6B7280);
   static const Color labelColor = Color(0xFF374151);
   static const Color borderColor = Color(0xFFE5E7EB);
+  bool isLoading = false;
 
   // Controllers
   final TextEditingController nameController = TextEditingController();
@@ -339,91 +341,159 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   onPressed: () async {
                     final name = nameController.text.trim();
                     final email = emailController.text.trim().toLowerCase();
-                    final passport = passwordController.text.trim();
+                    final password = passwordController.text;
+                    final confirmPassword = confirmPasswordController.text;
+                    final university = universityController.text.trim();
 
-                    // Check empty fields
-                    if (name.isEmpty || email.isEmpty || passport.isEmpty) {
+                    if (name.isEmpty ||
+                        email.isEmpty ||
+                        password.isEmpty ||
+                        confirmPassword.isEmpty ||
+                        university.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Please fill in all fields'),
+                            content: Text('Please fill in all fields')),
+                      );
+                      return;
+                    }
+
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                        .hasMatch(email)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content:
+                                Text('Please enter a valid email address')),
+                      );
+                      return;
+                    }
+
+                    if (password.length < 6) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Password must contain at least 6 characters'),
                         ),
                       );
                       return;
                     }
 
-                    // Basic email validation
-                    if (!email.contains('@')) {
+                    if (password != confirmPassword) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a valid email address'),
-                        ),
+                        const SnackBar(content: Text('Passwords do not match')),
                       );
                       return;
                     }
+
+                    setState(() => isLoading = true);
+
+                    UserCredential? credential;
 
                     try {
-                      // Reference to users collection
-                      final usersRef =
-                          FirebaseFirestore.instance.collection('users');
+                      // 1. Create the account using Firebase Authentication.
+                      credential = await FirebaseAuth.instance
+                          .createUserWithEmailAndPassword(
+                        email: email,
+                        password: password,
+                      );
 
-                      // Check whether email already exists
-                      final existingUser = await usersRef
-                          .where('email', isEqualTo: email)
-                          .limit(1)
-                          .get();
+                      final firebaseUser = credential.user!;
 
-                      // Email already exists
-                      if (existingUser.docs.isNotEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'An account with this email already exists'),
-                          ),
-                        );
-                        return;
-                      }
-                      final userDocument = usersRef.doc();
-                      final userId = userDocument.id;
-                      await usersRef.add({
-                        'university': universityController.text,
-                        'userId': userId,
+                      // 2. Keep your existing users collection and field names.
+                      final createdAt = DateTime.now().toIso8601String();
+
+                      final userData = <String, dynamic>{
+                        'university': university,
+                        'userId': firebaseUser.uid,
                         'name': name,
                         'email': email,
-                        'passport': passport,
-                        'createdAt': FieldValue.serverTimestamp().toString(),
-                      });
-                      user = {
-                        'university': universityController.text,
-                        'userId': userId,
-                        'name': name,
-                        'email': email,
-                        'passport': passport,
-                        'createdAt': FieldValue.serverTimestamp().toString(),
+                        // Do not save the password in Firestore.
+                        'password': passwordController.text,
+                        'createdAt': createdAt,
                       };
+
+                      // 3. Save the user in Firestore using the Firebase Auth UID.
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(firebaseUser.uid)
+                          .set(userData);
+
+                      // 4. Update your existing global user variable.
+                      user = userData;
+
+                      // 5. Save the local session using your existing helper.
                       await saveUser(user);
+
+                      if (!mounted) return;
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Account created successfully!'),
                         ),
                       );
-                      nameController.clear();
-                      emailController.clear();
-                      passwordController.clear();
-                      // Navigator.pop(context);
+
+                      // 6. Navigate to your existing navbar screen.
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const NavbarScreen(),
                         ),
                       );
-                      // Navigate to next screen
-                      // Get.to(() => const HomeScreen());
-                    } catch (e) {
+                    } on FirebaseAuthException catch (e) {
+                      // If Auth succeeded but Firestore failed, avoid leaving
+                      // an orphaned authentication account.
+                      if (credential?.user != null) {
+                        try {
+                          await credential!.user!.delete();
+                        } catch (_) {
+                          // Account deletion may require recent authentication.
+                        }
+                      }
+
+                      if (!mounted) return;
+
+                      String message;
+
+                      switch (e.code) {
+                        case 'email-already-in-use':
+                          message =
+                              'An account with this email already exists.';
+                          break;
+                        case 'invalid-email':
+                          message = 'Please enter a valid email address.';
+                          break;
+                        case 'weak-password':
+                          message = 'Please choose a stronger password.';
+                          break;
+                        case 'operation-not-allowed':
+                          message =
+                              'Email/password sign-up is not enabled in Firebase.';
+                          break;
+                        case 'network-request-failed':
+                          message =
+                              'Network error. Please check your internet connection.';
+                          break;
+                        default:
+                          message =
+                              e.message ?? 'Unable to create your account.';
+                      }
+
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Something went wrong: $e'),
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Account setup failed. Please try again or contact support.',
+                          ),
                         ),
                       );
+                    } finally {
+                      if (mounted) {
+                        setState(() => isLoading = false);
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

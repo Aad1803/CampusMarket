@@ -1,6 +1,7 @@
 import 'package:campusmarket/constant/const.dart';
 import 'package:campusmarket/homescreen/home_screen.dart';
 import 'package:campusmarket/messages/chat_list_screen.dart';
+import 'package:campusmarket/profile/profile_screen.dart';
 import 'package:campusmarket/sellscreen/sell_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -42,23 +43,15 @@ class _NavbarScreenState extends State<NavbarScreen> {
 
       // Body
       body: Center(
-        child: selectedIndex == 0
-            ? HomeScreen()
-            : selectedIndex == 1
-                ? SellScreen()
-                : selectedIndex == 2
-                    ? MessagesScreen(
-                        currentUser: user,
-                      )
-                    : Text(
-                        titles[selectedIndex],
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: primaryTextColor,
-                        ),
-                      ),
-      ),
+          child: selectedIndex == 0
+              ? HomeScreen()
+              : selectedIndex == 1
+                  ? SellScreen()
+                  : selectedIndex == 2
+                      ? MessagesScreen(
+                          currentUser: user,
+                        )
+                      : ProfileScreen()),
 
       // Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(

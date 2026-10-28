@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:campusmarket/constant/const.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -577,7 +578,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           }
                           final m = _messages[index];
                           final isMine = (m['senderId'] ?? '') == _myUid;
-                          return _buildBubble(m, isMine);
+                          return _buildBubble(m, isMine, _messages, index);
                         },
                       ),
           ),
@@ -600,7 +601,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildBubble(Map<String, dynamic> m, bool isMine) {
+  Widget _buildBubble(Map<String, dynamic> m, bool isMine,
+      List<Map<String, dynamic>> messages, int ind) {
     final type = (m['type'] ?? 'text').toString();
     final text = m['text'];
     final b64 = m['imageBase64'];
@@ -612,43 +614,67 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.72,
-        ),
-        decoration: BoxDecoration(
-          color: isMine ? Colors.blueAccent : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (type == 'image' && b64 is String && b64.isNotEmpty)
-              _buildImage(b64)
-            else
-              Text(
-                (text ?? '').toString(),
-                style: TextStyle(
-                  color: isMine ? Colors.white : Colors.black87,
-                  fontSize: 15,
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: GestureDetector(
+          onTapDown: (d) async {
+            final overlay =
+                Overlay.of(context).context.findRenderObject() as RenderBox;
+
+            final selected = await showMenu<String>(
+              context: context,
+              position: RelativeRect.fromRect(
+                d.globalPosition & const Size(1, 1),
+                Offset.zero & overlay.size,
+              ),
+              items: [
+                PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Text('Delete', style: TextStyle(color: whiteColor)),
                 ),
-              ),
-            const SizedBox(height: 4),
-            Text(
-              timeLabel,
-              style: TextStyle(
-                fontSize: 10,
-                color: isMine ? Colors.white70 : Colors.black45,
-              ),
+              ],
+            );
+            print(selected);
+            if (selected == 'delete') {
+              setState(() => messages = [...messages]
+                ..removeWhere((x) => x['id'] == m['id']));
+            }
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.72,
             ),
-          ],
-        ),
-      ),
-    );
+            decoration: BoxDecoration(
+              color: isMine ? Colors.blueAccent : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                if (type == 'image' && b64 is String && b64.isNotEmpty)
+                  _buildImage(b64)
+                else
+                  Text(
+                    (text ?? '').toString(),
+                    style: TextStyle(
+                      color: isMine ? Colors.white : Colors.black87,
+                      fontSize: 15,
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  timeLabel,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isMine ? Colors.white70 : Colors.black45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ));
   }
 
   Widget _buildImage(String b64) {

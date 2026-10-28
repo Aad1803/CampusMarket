@@ -17,8 +17,8 @@ class UniversitySearchField extends StatefulWidget {
 }
 
 class _UniversitySearchFieldState extends State<UniversitySearchField> {
-  List<String> universities = [];
-  List<String> filteredUniversities = [];
+  List<Map<String, dynamic>> universities = uni;
+  List<Map<String, dynamic>> filteredUniversities = [];
 
   bool isLoading = false;
   bool showDropdown = false;
@@ -45,7 +45,8 @@ class _UniversitySearchFieldState extends State<UniversitySearchField> {
       setState(() {
         filteredUniversities = universities
             .where(
-              (university) => university.toLowerCase().contains(searchText),
+              (university) =>
+                  university['name'].toLowerCase().contains(searchText),
             )
             .toList();
       });
@@ -62,8 +63,8 @@ class _UniversitySearchFieldState extends State<UniversitySearchField> {
     });
   }
 
-  void _selectUniversity(String university) {
-    widget.controller.text = university;
+  void _selectUniversity(Map<String, dynamic> university) {
+    widget.controller.text = university['name'];
     widget.controller.selection = TextSelection.fromPosition(
       TextPosition(
         offset: widget.controller.text.length,
@@ -161,7 +162,7 @@ class _UniversitySearchFieldState extends State<UniversitySearchField> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            university,
+                            university['name'],
                             style: const TextStyle(
                               fontSize: 15,
                             ),

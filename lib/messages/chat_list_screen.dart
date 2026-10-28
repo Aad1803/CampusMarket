@@ -62,20 +62,30 @@ class _MessagesScreenState extends State<MessagesScreen> {
   void _subscribeChats() {
     _sub = _chatsRef
         .where('participants', arrayContains: _myUid)
-        .orderBy('lastMessageAt', descending: true)
         .snapshots()
         .listen((snap) {
       final list = snap.docs.map((d) {
         final m = (d.data() as Map<String, dynamic>?) ?? {};
         return <String, dynamic>{'chatId': d.id, ...m};
-      }).toList();
+      }).toList()
+        ..sort((a, b) {
+          final ta = a['lastMessageAt'];
+          final tb = b['lastMessageAt'];
+          final da = ta is Timestamp
+              ? ta.toDate()
+              : DateTime.fromMillisecondsSinceEpoch(0);
+          final db = tb is Timestamp
+              ? tb.toDate()
+              : DateTime.fromMillisecondsSinceEpoch(0);
+          return db.compareTo(da); // descending
+        });
 
-      if (!mounted) return;
       setState(() {
         _allChats = list;
         _loading = false;
       });
-    }, onError: (_) {
+    }, onError: (e) {
+      print("Error in chatlisting: $e");
       if (mounted) setState(() => _loading = false);
     });
   }
